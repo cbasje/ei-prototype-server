@@ -1,0 +1,21 @@
+{
+    "name": "ei-prototype-server",
+    "version": "1.0.0",
+    "main": "index.js",
+    "author": "Sebastiaan Benjamins",
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "fs": "^0.0.1-security",
+        "https": "^1.0.0",
+        "johnny-five": "^2.1.0",
+        "lodash": "^4.17.21",
+        "os": "^0.1.2",
+        "serialport": "^10.5.0",
+        "socket.io": "^4.5.4"
+    }
+}
