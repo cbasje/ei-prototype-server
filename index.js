@@ -6,15 +6,15 @@ const socketIo = require("socket.io");
 const five = require("johnny-five");
 const _ = require("lodash");
 
-const READING_PIN = 2;
-const DIALING_PIN = 3;
+const DIAL_READ_PIN = 2,
+    DIALING_PIN = 3,
+    RECEIVER_PIN = 4;
 
 let needToPrint = false;
 
-let count = 0,
-    cleared = false;
+let count = 0;
 
-let reading, dialing;
+let dialReadButton, dialingButton, receiverButton;
 
 const app = express();
 const port = process.env.PORT || 3333;
@@ -56,24 +56,29 @@ const unsubscribe = (id) => {
 
 const board = new five.Board({ repl: false });
 board.on("ready", () => {
-    reading = new five.Button({
-        pin: READING_PIN,
+    dialReadButton = new five.Button({
+        pin: DIAL_READ_PIN,
         isPullup: true,
     });
-    dialing = new five.Button({
+    dialingButton = new five.Button({
         pin: DIALING_PIN,
+        isPullup: true,
+        invert: true,
+    });
+    receiverButton = new five.Button({
+        pin: RECEIVER_PIN,
         isPullup: true,
     });
 
     io.on("connection", (socket) => {
-        const { id } = socket.handshake.query;
+        const { id } = socket;
         console.log(`Connection: ${id}`);
 
         // The dial isn't being dialed, or has just finished being dialed.
-        dialing.on("up", () => {
+        dialingButton.on("down", () => {
             if (needToPrint) {
                 console.log(count % 10);
-                socket.emit("", count % 10);
+                socket.emit("dial", count % 10);
 
                 needToPrint = false;
                 count = 0;
@@ -81,10 +86,17 @@ board.on("ready", () => {
             }
         });
 
-        reading.on("up", () => {
+        dialReadButton.on("up", () => {
             // increment the count of pulses if it's gone high.
             count++;
             needToPrint = true;
+        });
+
+        receiverButton.on("up", () => {
+            socket.emit("receiver", true);
+        });
+        receiverButton.on("down", () => {
+            socket.emit("receiver", false);
         });
 
         // Listener for event
