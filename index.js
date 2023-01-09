@@ -5,16 +5,25 @@ const os = require("os");
 const socketIo = require("socket.io");
 const five = require("johnny-five");
 const _ = require("lodash");
+const { setInterval } = require("timers/promises");
 
 const DIAL_READ_PIN = 2,
     DIALING_PIN = 3,
-    RECEIVER_PIN = 4;
+    RECEIVER_PIN = 4,
+    RING_PIN_1 = 7,
+    RING_PIN_2 = 8,
+    RING_ENABLE_PIN = 9;
 
 let needToPrint = false;
 
 let count = 0;
 
-let dialReadButton, dialingButton, receiverButton;
+let dialReadButton,
+    dialingButton,
+    receiverButton,
+    ringPin1,
+    ringPin2,
+    ringEnablePin;
 
 const app = express();
 const port = process.env.PORT || 3333;
@@ -69,6 +78,9 @@ board.on("ready", () => {
         pin: RECEIVER_PIN,
         isPullup: true,
     });
+    ringPin1 = new five.Pin(RING_PIN_1);
+    ringPin2 = new five.Pin(RING_PIN_2);
+    ringEnablePin = new five.Pin(RING_ENABLE_PIN);
 
     io.on("connection", (socket) => {
         const { id } = socket;
@@ -100,8 +112,22 @@ board.on("ready", () => {
         });
 
         // Listener for event
-        socket.on("stop-pairing", () => {
-            stopPairing(id);
+        socket.on("ring", () => {
+            console.log("🎫 RING");
+
+            let i = 0;
+            ringEnablePin.high();
+
+            board.loop(20, (cancelI) => {
+                console.log("loopI", i, i % 2);
+                ringPin1.write(i % 2);
+                ringPin2.write(1 - (i % 2));
+                i++;
+
+                if (i >= 20) cancelI();
+            });
+
+            ringEnablePin.low();
         });
 
         // Add subscriber for each new connection
