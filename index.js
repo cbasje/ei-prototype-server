@@ -14,7 +14,8 @@ const DIAL_READ_PIN = 2,
 
 let needToPrint = false;
 
-let count = 0;
+let count = 0,
+    isPickedUp;
 
 let dialReadButton, dialingButton, receiverButton, ringPin1, ringPin2;
 
@@ -78,7 +79,7 @@ board.on("ready", () => {
         console.log(`Connection: ${id}`);
 
         // The dial isn't being dialed, or has just finished being dialed.
-        dialingButton.on("down", () => {
+        dialingButton.on("up", () => {
             if (needToPrint) {
                 console.log(count % 10);
                 socket.emit("dial", count % 10);
@@ -96,10 +97,12 @@ board.on("ready", () => {
         });
 
         receiverButton.on("up", () => {
-            socket.emit("receiver", true);
+            isPickedUp = false;
+            socket.emit("receiver", false);
         });
         receiverButton.on("down", () => {
-            socket.emit("receiver", false);
+            isPickedUp = true;
+            socket.emit("receiver", true);
         });
 
         // Listener for event
