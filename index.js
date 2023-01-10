@@ -113,15 +113,25 @@ board.on("ready", () => {
                 j = 0,
                 start = 0;
 
-            board.loop(20, (cancelI) => {
-                console.log("loopI", i, i % 2);
-                ringPin1.write(i % 2);
-                ringPin2.write(1 - (i % 2));
-                i++;
+            board.loop(50, (cancelI) => {
+                if (isPickedUp) cancelI();
+                else {
+                    if (i === 0 && j > 0 && Date.now() - start < 500) return;
 
-                if (i >= 20) cancelI();
+                    ringPin1.write(i % 2);
+                    ringPin2.write(1 - (i % 2));
+                    i++;
+
+                    if (i >= 30) {
+                        j++;
+                        i = 0;
+
+                        if (j < 3) {
+                            start = Date.now();
+                        } else if (j >= 3) cancelI();
+                    }
+                }
             });
-
         });
 
         // Add subscriber for each new connection
