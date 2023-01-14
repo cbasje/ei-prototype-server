@@ -1,5 +1,4 @@
-const https = require("https");
-const fs = require("fs");
+const http = require("http");
 const express = require("express");
 const os = require("os");
 const socketIo = require("socket.io");
@@ -21,18 +20,13 @@ let dialReadButton, dialingButton, receiverButton, ringPin1, ringPin2;
 
 const app = express();
 const port = process.env.PORT || 3333;
-const hostname = "localhost";
+const server = http.createServer(app);
 
 const localIP =
     process.env.NODE_ENV !== "production"
         ? os.networkInterfaces().en0.find((a) => a.family === "IPv4").address
         : undefined;
 
-// Set up socket server
-const key = fs.readFileSync("localhost-key.pem", "utf-8");
-const cert = fs.readFileSync("localhost.pem", "utf-8");
-
-const server = https.createServer({ key, cert }, app);
 const io = new socketIo.Server(server, {
     cors: {
         origin: "*",
@@ -150,8 +144,8 @@ app.get("/", (req, res) => {
 
 // Start up server and log addresses for local and network
 const startServer = () => {
-    server.listen(port, "0.0.0.0", () => {
-        console.log(`Listening at https://${hostname}:${port}`);
+    server.listen(port, () => {
+        console.log(`Listening at http://localhost:${port}`);
         if (localIP) console.log(`On Network at http://${localIP}:${port}`);
     });
 };
