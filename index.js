@@ -74,6 +74,12 @@ board.on("ready", () => {
     ringPin1 = new five.Pin(RING_PIN_1);
     ringPin2 = new five.Pin(RING_PIN_2);
 
+    dialReadButton.on("up", () => {
+        // increment the count of pulses if it's gone high.
+        count++;
+        needToPrint = true;
+    });
+
     io.on("connection", (socket) => {
         const { id } = socket;
         console.log(`Connection: ${id}`);
@@ -88,12 +94,6 @@ board.on("ready", () => {
                 count = 0;
                 cleared = false;
             }
-        });
-
-        dialReadButton.on("up", () => {
-            // increment the count of pulses if it's gone high.
-            count++;
-            needToPrint = true;
         });
 
         receiverButton.on("up", () => {
@@ -113,7 +113,7 @@ board.on("ready", () => {
                 j = 0,
                 start = 0;
 
-            board.loop(50, (cancelI) => {
+            board.loop(40, (cancelI) => {
                 if (isPickedUp) cancelI();
                 else {
                     if (i === 0 && j > 0 && Date.now() - start < 500) return;
