@@ -4,6 +4,7 @@ const os = require("os");
 const socketIo = require("socket.io");
 const five = require("johnny-five");
 const _ = require("lodash");
+const { v4: uuid } = require("uuid");
 
 const DIAL_READ_PIN = 2,
     DIALING_PIN = 3,
