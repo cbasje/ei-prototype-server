@@ -10,6 +10,9 @@ const DIAL_READ_PIN = 2,
     RECEIVER_PIN = 4,
     RING_PIN_1 = 7,
     RING_PIN_2 = 8;
+const ROLE_NEWCOMER = "0",
+    ROLE_LOCAL = "1",
+    ROLE_ADMIN = "2";
 
 let needToPrint = false;
 
@@ -35,20 +38,30 @@ const io = new socketIo.Server(server, {
     },
 });
 
-const subscribers = new Map();
+const subscribers = {};
 const subscribe = (id, socket) => {
-    if (subscribers.has(id)) {
+    if (subscribers.hasOwnProperty(id)) {
         console.log(
             `Client with ID ${id} already connected. Disconnecting older client.`
         );
         unsubscribe(id);
     }
-    subscribers.set(id, socket);
+    subscribers[id] = { role: undefined, socket };
     console.log(`Connected to ${id}.`);
 };
 const unsubscribe = (id) => {
-    subscribers.delete(id);
+    delete subscribers[id];
     console.log(`Disconnected from ${id}.`);
+};
+
+// TODO: remove
+let conversation = [];
+
+const resetConversation = () => {
+    conversation = [];
+};
+const setRole = (id, role) => {
+    subscribers[id].role = role;
 };
 
 const board = new five.Board({ repl: false });
@@ -75,14 +88,22 @@ board.on("ready", () => {
     });
 
     io.on("connection", (socket) => {
-        const { id } = socket;
-        console.log(`Connection: ${id}`);
+        const { id } = socket.handshake.query;
 
         // The dial isn't being dialed, or has just finished being dialed.
         dialingButton.on("up", () => {
             if (needToPrint) {
-                console.log(count % 10);
-                socket.emit("dial", count % 10);
+                const number = count % 10;
+                console.log("☎️ DIAL:", number);
+
+                Object.keys(subscribers).forEach((k) => {
+                    if (
+                        [ROLE_ADMIN, ROLE_NEWCOMER].includes(
+                            subscribers[k].role
+                        )
+                    )
+                        subscribers[k].socket.emit("dial", number);
+                });
 
                 needToPrint = false;
                 count = 0;
@@ -93,10 +114,12 @@ board.on("ready", () => {
         receiverButton.on("up", () => {
             isPickedUp = false;
             socket.emit("receiver", false);
+            socket.broadcast.emit("receiver", false);
         });
         receiverButton.on("down", () => {
             isPickedUp = true;
             socket.emit("receiver", true);
+            socket.broadcast.emit("receiver", true);
         });
 
         // Listener for event
@@ -127,9 +150,30 @@ board.on("ready", () => {
                 }
             });
         });
+        socket.on("send-message", (msg) => {
+            console.log("💬 MESSAGE:", msg.content);
+
+            conversation.push(msg);
+            socket.broadcast.emit("receive-message", msg);
+        });
+        socket.on("reset-conversation", () => {
+            console.log("🔄 RESET");
+
+            resetConversation();
+            socket.emit("update-conversation", conversation);
+            socket.broadcast.emit("update-conversation", conversation);
+        });
+        socket.on("set-role", (role) => {
+            console.log("🤖 SET ROLE:", id, role);
+
+            setRole(id, role);
+        });
 
         // Add subscriber for each new connection
         subscribe(id, socket);
+        resetConversation();
+        socket.emit("update-conversation", conversation);
+        socket.broadcast.emit("update-conversation", conversation);
 
         // Clean up when client disconnects
         socket.on("disconnect", () => {
