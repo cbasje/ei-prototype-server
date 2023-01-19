@@ -55,7 +55,6 @@ const unsubscribe = (id) => {
     console.log(`Disconnected from ${id}.`);
 };
 
-// TODO: remove
 let conversation = [];
 
 const resetConversation = () => {
