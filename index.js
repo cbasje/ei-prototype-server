@@ -150,37 +150,49 @@ board.on("ready", () => {
                 }
             });
         });
-        socket.on("send-message", (msg) => {
-            console.log("💬 MESSAGE:", msg.content);
+        defineUniversalListeners(id, socket);
+    });
+});
+board.on("fail", () => {
+    io.on("connection", (socket) => {
+        const { id } = socket.handshake.query;
 
-            conversation.push(msg);
-            socket.broadcast.emit("receive-message", msg);
-        });
-        socket.on("reset-conversation", () => {
-            console.log("🔄 RESET");
+        // Listener for event
+        defineUniversalListeners(id, socket);
+    });
+});
 
-            resetConversation();
-            socket.emit("update-conversation", conversation);
-            socket.broadcast.emit("update-conversation", conversation);
-        });
-        socket.on("set-role", (role) => {
-            console.log("🤖 SET ROLE:", id, role);
+const defineUniversalListeners = (id, socket) => {
+    socket.on("send-message", (msg) => {
+        console.log("💬 MESSAGE:", msg.content);
 
-            setRole(id, role);
-        });
+        conversation.push(msg);
+        socket.broadcast.emit("receive-message", msg);
+    });
+    socket.on("reset-conversation", () => {
+        console.log("🔄 RESET");
 
-        // Add subscriber for each new connection
-        subscribe(id, socket);
         resetConversation();
         socket.emit("update-conversation", conversation);
         socket.broadcast.emit("update-conversation", conversation);
-
-        // Clean up when client disconnects
-        socket.on("disconnect", () => {
-            unsubscribe(id);
-        });
     });
-});
+    socket.on("set-role", (role) => {
+        console.log("🤖 SET ROLE:", id, role);
+
+        setRole(id, role);
+    });
+
+    // Add subscriber for each new connection
+    subscribe(id, socket);
+    resetConversation();
+    socket.emit("update-conversation", conversation);
+    socket.broadcast.emit("update-conversation", conversation);
+
+    // Clean up when client disconnects
+    socket.on("disconnect", () => {
+        unsubscribe(id);
+    });
+};
 
 app.get("/", (req, res) => {
     res.send(`Listening at https://${hostname}:${port}`);
