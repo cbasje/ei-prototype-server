@@ -184,7 +184,6 @@ const defineUniversalListeners = (id, socket) => {
 
     // Add subscriber for each new connection
     subscribe(id, socket);
-    resetConversation();
     socket.emit("update-conversation", conversation);
     socket.broadcast.emit("update-conversation", conversation);
 
